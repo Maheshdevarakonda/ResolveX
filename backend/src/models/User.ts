@@ -44,6 +44,7 @@ export interface SafeUser {
   role: Role;
   departmentId?: string;
   isActive: boolean;
+  isDemo?: boolean;
 }
 
 export function toSafeUser(user: {
@@ -54,6 +55,7 @@ export function toSafeUser(user: {
   role: Role;
   departmentId?: Types.ObjectId;
   isActive: boolean;
+  isDemo?: boolean;
 }): SafeUser {
   return {
     id: String(user._id),
@@ -63,5 +65,6 @@ export function toSafeUser(user: {
     role: user.role,
     ...(user.departmentId ? { departmentId: String(user.departmentId) } : {}),
     isActive: user.isActive,
+    ...(user.isDemo !== undefined ? { isDemo: user.isDemo } : {}),
   };
 }

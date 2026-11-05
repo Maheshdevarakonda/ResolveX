@@ -38,6 +38,8 @@ export const complaintApi = {
   accept: (id: string) => api.post(`/complaints/${id}/accept`).then((r) => r.data.data.complaint as Complaint),
   setStatus: (id: string, status: "IN_PROGRESS" | "RESOLVED", note?: string) =>
     api.patch(`/complaints/${id}/status`, { status, note }).then((r) => r.data.data.complaint as Complaint),
+  setPriority: (id: string, priority: Priority) =>
+    api.patch(`/complaints/${id}/priority`, { priority }).then((r) => r.data.data.complaint as Complaint),
   close: (id: string) => api.post(`/complaints/${id}/close`).then((r) => r.data.data.complaint as Complaint),
   reopen: (id: string, reason: string) => api.post(`/complaints/${id}/reopen`, { reason }).then((r) => r.data.data.complaint as Complaint),
   comments: (id: string) => api.get(`/complaints/${id}/comments`).then((r) => r.data.data as Comment[]),
@@ -98,4 +100,11 @@ export const notificationApi = {
   list: (params?: { page?: number; limit?: number; unread?: boolean }) => paged<AppNotification>("/notifications", params),
   read: (id: string) => api.patch(`/notifications/${id}/read`).then(() => undefined),
   readAll: () => api.patch("/notifications/read-all").then(() => undefined),
+};
+
+export const demoApi = {
+  createSession: (role: Role = "CUSTOMER") =>
+    api.post("/demo/session", { role }).then((r) => r.data.data as { user: User; accessToken: string; organization: { id: string; name: string; slug: string; isDemo: boolean } }),
+  reset: () =>
+    api.post("/demo/reset", {}).then((r) => r.data.data as { user: User; accessToken: string; organization: { id: string; name: string; slug: string; isDemo: boolean } }),
 };

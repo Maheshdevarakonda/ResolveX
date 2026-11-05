@@ -18,6 +18,7 @@ import {
   AssignInput,
   CreateComplaintInput,
   ListComplaintsQuery,
+  PriorityInput,
   StatusInput,
 } from "./complaint.schema";
 
@@ -454,5 +455,63 @@ export async function reopenComplaint(actor: Actor, id: string, reason: string):
     message: `Complaint ${updated.ticketNo} was reopened by the customer`,
     excludeUserId: actor.id,
   });
+  return getComplaintDto(actor, id);
+}
+
+export async function updatePriority(actor: Actor, id: string, input: PriorityInput): Promise<ComplaintDto> {
+  const complaint = await findScoped(actor, id);
+  if (["RESOLVED", "CLOSED"].includes(complaint.status)) {
+    throw ApiError.conflict(`Cannot change priority of a ${complaint.status.toLowerCase()} complaint`);
+  }
+  if (actor.role === "EMPLOYEE" && String(complaint.assignedTo) !== actor.id) {
+    throw ApiError.forbidden("You may only change priority for complaints assigned to you");
+  }
+
+  const beforePriority = complaint.priority;
+  if (beforePriority === input.priority) {
+    return getComplaintDto(actor, id);
+  }
+
+  const policy = await getPolicy(actor.organizationId, input.priority);
+  const now = new Date();
+  complaint.priority = input.priority;
+  complaint.resolutionDueAt = new Date(complaint.createdAt.getTime() + policy.resolutionMinutes * 60_000);
+  if (!complaint.firstRespondedAt) {
+    complaint.firstResponseDueAt = new Date(complaint.createdAt.getTime() + policy.responseMinutes * 60_000);
+  }
+  if (complaint.resolutionDueAt.getTime() < now.getTime() && !complaint.isEscalated) {
+    complaint.isEscalated = true;
+    complaint.escalatedAt = now;
+    complaint.escalationHistory.push({
+      at: now,
+      reason: `Resolution deadline missed after priority escalated to ${input.priority}`,
+      level: 1,
+    });
+  }
+
+  await complaint.save();
+
+  await recordAudit({
+    organizationId: actor.organizationId,
+    actor,
+    action: "COMPLAINT_PRIORITY_CHANGED",
+    entityType: "COMPLAINT",
+    entityId: complaint._id,
+    complaintId: complaint._id,
+    changes: {
+      before: { priority: beforePriority },
+      after: { priority: input.priority, resolutionDueAt: complaint.resolutionDueAt },
+    },
+  });
+
+  await notify({
+    organizationId: actor.organizationId,
+    userIds: [String(complaint.customerId), ...(complaint.assignedTo ? [String(complaint.assignedTo)] : [])],
+    type: "STATUS_CHANGED",
+    complaintId: String(complaint._id),
+    message: `Priority for complaint ${complaint.ticketNo} was updated to ${input.priority}`,
+    excludeUserId: actor.id,
+  });
+
   return getComplaintDto(actor, id);
 }

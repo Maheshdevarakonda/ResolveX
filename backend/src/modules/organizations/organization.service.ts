@@ -11,6 +11,7 @@ export interface OrganizationDto {
   name: string;
   slug: string;
   isActive: boolean;
+  isDemo?: boolean;
   settings: { allowCustomerRegistration: boolean; reopenWindowDays: number };
   createdAt: Date;
 }
@@ -21,6 +22,7 @@ function toOrganizationDto(org: HydratedDocument<IOrganization>): OrganizationDt
     name: org.name,
     slug: org.slug,
     isActive: org.isActive,
+    isDemo: org.isDemo ?? false,
     settings: {
       allowCustomerRegistration: org.settings?.allowCustomerRegistration ?? true,
       reopenWindowDays: org.settings?.reopenWindowDays ?? 7,

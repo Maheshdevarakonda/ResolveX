@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { complaintApi } from "../../api";
 import { getErrorMessage } from "../../api/client";
 import { Button, Field, Input, PageHeader, Select, Textarea } from "../../components/ui";
+import { useAuth } from "../../context/AuthContext";
 import { useToast } from "../../context/ToastContext";
 import { CATEGORIES, Category, PRIORITIES, Priority } from "../../types";
 import { humanize } from "../../utils/format";
@@ -17,10 +18,19 @@ const ALLOWED = ["image/png", "image/jpeg", "image/webp", "application/pdf"];
 export default function CreateComplaintPage() {
   const navigate = useNavigate();
   const toast = useToast();
+  const { isDemoMode } = useAuth();
   const [files, setFiles] = useState<File[]>([]);
   const [fileError, setFileError] = useState("");
   const [error, setError] = useState("");
-  const { register, handleSubmit, formState: { errors, isSubmitting } } = useForm<Form>({ defaultValues: { category: "SERVICE", priority: "MEDIUM" } });
+  const { register, handleSubmit, setValue, formState: { errors, isSubmitting } } = useForm<Form>({ defaultValues: { category: "SERVICE", priority: "MEDIUM" } });
+
+  const fillSample = () => {
+    setValue("title", "Intermittent fiber packet loss and high latency during evening peak hours", { shouldValidate: true });
+    setValue("category", "NETWORK", { shouldValidate: true });
+    setValue("priority", "HIGH", { shouldValidate: true });
+    setValue("description", "Ping times increase from 15ms to over 180ms every evening between 7 PM and 10 PM. Video calls drop repeatedly and streaming buffers. Power-cycling the optical modem has not restored normal speeds.", { shouldValidate: true });
+    toast.info("Sample complaint data filled!");
+  };
 
   const pickFiles = (list: FileList | null) => {
     setFileError("");
@@ -50,7 +60,17 @@ export default function CreateComplaintPage() {
 
   return (
     <>
-      <PageHeader title="New complaint" subtitle="Tell us what went wrong. The higher the priority, the faster the response target." />
+      <PageHeader
+        title="New complaint"
+        subtitle="Tell us what went wrong. The higher the priority, the faster the response target."
+        actions={
+          isDemoMode ? (
+            <Button type="button" variant="secondary" onClick={fillSample}>
+              ✨ Auto-Fill Sample Issue
+            </Button>
+          ) : undefined
+        }
+      />
       <form onSubmit={onSubmit} className="card max-w-2xl space-y-5 p-6" noValidate>
         {error && <div role="alert" className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{error}</div>}
         <Field label="Title" htmlFor="title" error={errors.title?.message}>

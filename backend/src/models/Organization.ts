@@ -16,6 +16,7 @@ const organizationSchema = new Schema(
       maxlength: 40,
     },
     isActive: { type: Boolean, default: true },
+    isDemo: { type: Boolean, default: false },
     // Organization-level settings an admin can change.
     settings: {
       // If false, new customers cannot self-register (admin-managed accounts only).

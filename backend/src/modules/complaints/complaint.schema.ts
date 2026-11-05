@@ -36,7 +36,12 @@ export const reopenSchema = z.object({
   reason: z.string().trim().min(5, "Please explain why you are reopening").max(1000),
 });
 
+export const prioritySchema = z.object({
+  priority: z.enum(PRIORITIES),
+});
+
 export type CreateComplaintInput = z.infer<typeof createComplaintSchema>;
 export type ListComplaintsQuery = z.infer<typeof listComplaintsQuerySchema>;
 export type AssignInput = z.infer<typeof assignSchema>;
 export type StatusInput = z.infer<typeof statusSchema>;
+export type PriorityInput = z.infer<typeof prioritySchema>;

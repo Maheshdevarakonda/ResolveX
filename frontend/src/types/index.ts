@@ -15,6 +15,7 @@ export interface User {
   role: Role;
   departmentId?: string;
   isActive: boolean;
+  isDemo?: boolean;
 }
 
 export interface Meta {

@@ -12,6 +12,7 @@ import analyticsRoutes from "./modules/analytics/analytics.routes";
 import auditRoutes from "./modules/audit/audit.routes";
 import authRoutes from "./modules/auth/auth.routes";
 import complaintRoutes from "./modules/complaints/complaint.routes";
+import demoRoutes from "./modules/demo/demo.routes";
 import feedbackRoutes from "./modules/feedback/feedback.routes";
 import notificationRoutes from "./modules/notifications/notification.routes";
 import slaRoutes from "./modules/sla/sla.routes";
@@ -56,6 +57,7 @@ export function createApp(): Express {
   app.use("/api/v1/departments", departmentRoutes);
   app.use("/api/v1/users", userRoutes);
   app.use("/api/v1/complaints", complaintRoutes);
+  app.use("/api/v1/demo", demoRoutes);
   app.use("/api/v1/notifications", notificationRoutes);
   app.use("/api/v1/sla-policies", slaRoutes);
   app.use("/api/v1/analytics", analyticsRoutes);

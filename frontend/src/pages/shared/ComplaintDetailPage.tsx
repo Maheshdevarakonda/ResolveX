@@ -7,13 +7,14 @@ import { SlaTimer } from "../../components/SlaTimer";
 import { useAuth } from "../../context/AuthContext";
 import { useLiveRefresh } from "../../context/RealtimeContext";
 import { useToast } from "../../context/ToastContext";
-import type { Complaint } from "../../types";
+import type { Complaint, Priority } from "../../types";
+import { PRIORITIES } from "../../types";
 import { cn, formatDate, humanize } from "../../utils/format";
 import { useAsync } from "../../utils/useAsync";
 
 export default function ComplaintDetailPage() {
   const { id = "" } = useParams();
-  const { user } = useAuth();
+  const { user, isDemoMode } = useAuth();
   const toast = useToast();
   const role = user!.role;
 
@@ -24,8 +25,9 @@ export default function ComplaintDetailPage() {
   useLiveRefresh(refreshAll, id);
 
   const [busy, setBusy] = useState(false);
-  const [modal, setModal] = useState<null | "assign" | "resolve" | "reopen" | "close">(null);
+  const [modal, setModal] = useState<null | "assign" | "resolve" | "reopen" | "close" | "priority">(null);
   const [employeeId, setEmployeeId] = useState("");
+  const [selectedPriority, setSelectedPriority] = useState<Priority>("MEDIUM");
   const [note, setNote] = useState("");
   const [commentText, setCommentText] = useState("");
   const [internal, setInternal] = useState(false);
@@ -56,6 +58,7 @@ export default function ComplaintDetailPage() {
   const canWork = role === "ADMIN" || (role === "EMPLOYEE" && mine);
   const canStart = canWork && ["ASSIGNED", "REOPENED"].includes(c.status);
   const canResolve = canWork && c.status === "IN_PROGRESS";
+  const canChangePriority = canWork && activeStatus;
   const canClose = (role === "ADMIN" || role === "CUSTOMER") && c.status === "RESOLVED";
   const canReopen = role === "CUSTOMER" && c.status === "RESOLVED";
   const canComment = c.status !== "CLOSED" && (role !== "EMPLOYEE" || mine);
@@ -113,6 +116,18 @@ export default function ComplaintDetailPage() {
     <div>
       <Link to="/app/complaints" className="mb-3 inline-block text-sm text-slate-500 hover:text-slate-800">&larr; Back to complaints</Link>
 
+      {isDemoMode && (
+        <div className="mb-4 flex items-start gap-2.5 rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-900">
+          <span className="text-sm">💡</span>
+          <div>
+            <span className="font-semibold uppercase tracking-wider">Recruiter Workflow Guide: </span>
+            {role === "CUSTOMER" && "You are viewing this ticket as Customer. You can check the live SLA timer, view conversation history, or switch to Employee View in the top bar to accept and resolve this complaint."}
+            {role === "EMPLOYEE" && "As Support Staff, you can claim unassigned tickets, click 'Change priority' (dynamically recalculates the SLA deadline), mark 'Start work', or 'Resolve' with a customer resolution note."}
+            {role === "ADMIN" && "As Administrator, you have full supervisory privileges: reassign tickets across employees, override priority, inspect full audit history, and monitor SLA compliance."}
+          </div>
+        </div>
+      )}
+
       <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <p className="font-mono text-xs text-slate-500">{c.ticketNo}</p>
@@ -128,6 +143,7 @@ export default function ComplaintDetailPage() {
           {canAccept && <Button loading={busy} onClick={() => act(() => complaintApi.accept(c.id), "Complaint accepted")}>Accept</Button>}
           {canAssign && <Button variant="secondary" onClick={() => { setEmployeeId(c.assignedTo?.id ?? ""); setModal("assign"); }}>{c.assignedTo ? "Reassign" : "Assign"}</Button>}
           {canStart && <Button loading={busy} onClick={() => act(() => complaintApi.setStatus(c.id, "IN_PROGRESS"), "Marked in progress")}>Start work</Button>}
+          {canChangePriority && <Button variant="secondary" onClick={() => { setSelectedPriority(c.priority); setModal("priority"); }}>Change priority</Button>}
           {canResolve && <Button onClick={() => setModal("resolve")}>Resolve</Button>}
           {canClose && <Button variant="secondary" onClick={() => setModal("close")}>Close</Button>}
           {canReopen && <Button variant="secondary" onClick={() => setModal("reopen")}>Reopen</Button>}
@@ -281,6 +297,15 @@ export default function ComplaintDetailPage() {
         footer={<><Button variant="secondary" onClick={() => setModal(null)}>Cancel</Button><Button loading={busy} disabled={note.trim().length < 3} onClick={() => act(() => complaintApi.setStatus(c.id, "RESOLVED", note.trim()), "Complaint resolved")}>Mark resolved</Button></>}>
         <Field label="Resolution note" htmlFor="resolution" hint="The customer will see this.">
           <Textarea id="resolution" value={note} maxLength={2000} onChange={(e) => setNote(e.target.value)} />
+        </Field>
+      </Modal>
+
+      <Modal open={modal === "priority"} title="Change complaint priority" onClose={() => setModal(null)}
+        footer={<><Button variant="secondary" onClick={() => setModal(null)}>Cancel</Button><Button loading={busy} onClick={() => act(() => complaintApi.setPriority(c.id, selectedPriority), "Priority updated")}>Update priority</Button></>}>
+        <Field label="Priority level" htmlFor="priority" hint="Changing priority automatically recalculates SLA first-response and resolution deadlines.">
+          <Select id="priority" value={selectedPriority} onChange={(e) => setSelectedPriority(e.target.value as Priority)}>
+            {PRIORITIES.map((p) => <option key={p} value={p}>{p}</option>)}
+          </Select>
         </Field>
       </Modal>
 

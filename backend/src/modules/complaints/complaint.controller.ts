@@ -40,6 +40,11 @@ export const changeStatus = asyncHandler(async (req, res) => {
   sendSuccess(res, { complaint }, "Status updated");
 });
 
+export const updatePriority = asyncHandler(async (req, res) => {
+  const complaint = await service.updatePriority(req.user!, req.params.id, req.body);
+  sendSuccess(res, { complaint }, "Priority updated");
+});
+
 export const close = asyncHandler(async (req, res) => {
   const complaint = await service.closeComplaint(req.user!, req.params.id);
   sendSuccess(res, { complaint }, "Complaint closed");

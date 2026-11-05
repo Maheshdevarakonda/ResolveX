@@ -13,6 +13,7 @@ import {
   assignSchema,
   createComplaintSchema,
   listComplaintsQuerySchema,
+  prioritySchema,
   reopenSchema,
   statusSchema,
 } from "./complaint.schema";
@@ -44,6 +45,12 @@ router.patch(
   authorize("ADMIN", "EMPLOYEE"),
   validate({ params: idParamsSchema, body: statusSchema }),
   controller.changeStatus
+);
+router.patch(
+  "/:id/priority",
+  authorize("ADMIN", "EMPLOYEE"),
+  validate({ params: idParamsSchema, body: prioritySchema }),
+  controller.updatePriority
 );
 router.post("/:id/close", authorize("ADMIN", "CUSTOMER"), params, controller.close);
 router.post(

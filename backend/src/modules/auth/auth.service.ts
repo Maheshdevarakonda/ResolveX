@@ -202,6 +202,9 @@ export async function requestPasswordReset(
   email: string
 ): Promise<{ token: string; organizationSlug: string } | null> {
   const org = await Organization.findOne({ slug: organizationSlug, isActive: true });
+  if (org?.isDemo) {
+    throw ApiError.badRequest("Password reset is disabled on the demo organization");
+  }
   const user = org ? await User.findOne({ organizationId: org._id, email, isActive: true }) : null;
   if (!org || !user) return null;
 

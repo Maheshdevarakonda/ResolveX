@@ -82,6 +82,10 @@ export async function updateUser(
     throw ApiError.badRequest("You cannot deactivate your own account");
   }
 
+  if (input.isActive === false && user.email.endsWith("@resolvex.demo")) {
+    throw ApiError.badRequest("Core demo accounts cannot be deactivated in demo mode");
+  }
+
   if (input.name !== undefined) user.name = input.name;
 
   if (input.departmentId !== undefined) {
