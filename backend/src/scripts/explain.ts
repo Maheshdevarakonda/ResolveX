@@ -15,38 +15,42 @@ interface Stats {
   nReturned: number;
 }
 
+async function extractStats(q: any, hint?: Record<string, 1 | -1>): Promise<Stats> {
+  if (hint) q = q.hint(hint);
+  const raw = await q.explain("executionStats");
+  const stats = raw.executionStats ?? raw;
+  return {
+    executionTimeMillis: stats.executionTimeMillis ?? 0,
+    totalDocsExamined: stats.totalDocsExamined ?? 0,
+    totalKeysExamined: stats.totalKeysExamined ?? 0,
+    nReturned: stats.nReturned ?? 0,
+  };
+}
+
 async function main() {
   await connectDB();
-  const org = await Organization.findOne({ slug: "demo-org" });
-  if (!org) throw new Error('Run "npm run seed" first (it creates the demo-org organization).');
+  const org = await Organization.findOne({ slug: { $in: ["resolvex-demo", "demo-org"] } });
+  if (!org) throw new Error('Run "npm run seed" or initialize demo first.');
   const organizationId = org._id;
   const total = await Complaint.countDocuments({ organizationId });
 
   const cases: { name: string; run: (hint?: Record<string, 1 | -1>) => Promise<Stats> }[] = [
     {
       name: "Admin list: status=IN_PROGRESS, newest first, page 1",
-      run: async (hint) => {
-        let q = Complaint.find({ organizationId, status: "IN_PROGRESS" }).sort({ createdAt: -1 }).limit(20);
-        if (hint) q = q.hint(hint);
-        return (await q.explain("executionStats")) as unknown as Stats;
-      },
+      run: (hint) => extractStats(Complaint.find({ organizationId, status: "IN_PROGRESS" }).sort({ createdAt: -1 }).limit(20), hint),
     },
     {
       name: "Employee list: assignedTo=<employee>, status=ASSIGNED",
       run: async (hint) => {
         const sample = await Complaint.findOne({ organizationId, assignedTo: { $ne: null } }).select("assignedTo").lean();
-        let q = Complaint.find({ organizationId, assignedTo: sample?.assignedTo, status: "ASSIGNED" }).limit(20);
-        if (hint) q = q.hint(hint);
-        return (await q.explain("executionStats")) as unknown as Stats;
+        return extractStats(Complaint.find({ organizationId, assignedTo: sample?.assignedTo, status: "ASSIGNED" }).limit(20), hint);
       },
     },
     {
       name: "Customer list: customerId=<customer>, newest first",
       run: async (hint) => {
         const sample = await Complaint.findOne({ organizationId }).select("customerId").lean();
-        let q = Complaint.find({ organizationId, customerId: sample?.customerId }).sort({ createdAt: -1 }).limit(20);
-        if (hint) q = q.hint(hint);
-        return (await q.explain("executionStats")) as unknown as Stats;
+        return extractStats(Complaint.find({ organizationId, customerId: sample?.customerId }).sort({ createdAt: -1 }).limit(20), hint);
       },
     },
   ];
