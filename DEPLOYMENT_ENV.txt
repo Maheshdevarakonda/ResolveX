@@ -1,17 +1,27 @@
-# ResolveX – Environment Variables for Production
-# ================================================
-# Backend (Render) – add these in Render Dashboard → Environment
-# Frontend (Vercel) – add VITE_API_URL in Vercel Dashboard → Settings → Environment Variables
+# ResolveX – Environment Variables for Production Deployment
+# ===========================================================
+# Stack: MongoDB Atlas (DB) + Koyeb (Backend) + Vercel (Frontend)
 
-# ----- BACKEND (Render) -----
+# -------------------------------------------------------
+# BACKEND (paste these in Koyeb Dashboard → App → Secrets)
+# -------------------------------------------------------
 NODE_ENV=production
-PORT=10000
-MONGODB_URI=                        # paste your Atlas connection string
-JWT_ACCESS_SECRET=                  # 64-char random hex
-JWT_REFRESH_SECRET=                 # 64-char random hex (different from above)
+PORT=8000
+MONGODB_URI=                        # paste your Atlas connection string here
+JWT_ACCESS_SECRET=                  # 64-char random hex (see generation command below)
+JWT_REFRESH_SECRET=                 # 64-char random hex (DIFFERENT from above)
 JWT_ACCESS_EXPIRES_IN=15m
 JWT_REFRESH_EXPIRES_IN=7d
-CLIENT_URL=                         # your Vercel URL, e.g. https://resolvex.vercel.app
+CLIENT_URL=                         # your Vercel URL e.g. https://resolvex.vercel.app
+ENABLE_SLA_JOB=true
+SLA_WARNING_MINUTES=60
 
-# ----- FRONTEND (Vercel) -----
-VITE_API_URL=                       # your Render backend URL, e.g. https://resolvex-backend.onrender.com
+# -------------------------------------------------------
+# FRONTEND (paste these in Vercel Dashboard → Settings → Environment Variables)
+# -------------------------------------------------------
+VITE_API_URL=                       # your Koyeb backend URL e.g. https://resolvex-backend-xxxx.koyeb.app
+
+# -------------------------------------------------------
+# GENERATE JWT SECRETS (run this in PowerShell)
+# -------------------------------------------------------
+# node -e "console.log('ACCESS:', require('crypto').randomBytes(64).toString('hex')); console.log('REFRESH:', require('crypto').randomBytes(64).toString('hex'))"
