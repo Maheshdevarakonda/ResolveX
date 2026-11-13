@@ -520,3 +520,4 @@ export async function resetDemoSession(): Promise<DemoSessionResult> {
   await seedDemoData();
   return getDemoSession("CUSTOMER");
 }
+
